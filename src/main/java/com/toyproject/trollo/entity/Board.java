@@ -12,7 +12,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "boards")
+@Table(
+    name = "boards",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_board_workspace_position", columnNames = {"workspace_id", "position"})
+    },
+    indexes = {
+        @Index(name = "idx_board_workspace_position", columnList = "workspace_id, position")
+    }
+)
 public class Board extends BaseEntity {
 
     @Id
@@ -25,5 +33,9 @@ public class Board extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "INT")
     private int position;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "workspace_id", nullable = false, columnDefinition = "BIGINT")
+    private Workspace workspace;
 
 }

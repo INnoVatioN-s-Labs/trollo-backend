@@ -12,7 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "workspaces")
+@Table(
+    name = "workspaces",
+    indexes = {
+        @Index(name = "idx_workspace_owner", columnList = "owner_id")
+    }
+)
 public class Workspace extends BaseEntity {
 
     @Id
@@ -25,5 +30,9 @@ public class Workspace extends BaseEntity {
 
     @Column(length = 255, columnDefinition = "VARCHAR(255)")
     private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false, columnDefinition = "BIGINT")
+    private User owner;
 
 }

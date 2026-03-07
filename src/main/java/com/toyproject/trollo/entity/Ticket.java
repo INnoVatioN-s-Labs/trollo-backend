@@ -12,7 +12,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "tickets")
+@Table(
+    name = "tickets",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_ticket_board_position", columnNames = {"board_id", "position"})
+    },
+    indexes = {
+        @Index(name = "idx_ticket_board_position", columnList = "board_id, position")
+    }
+)
 public class Ticket extends BaseEntity {
 
     @Id
@@ -29,5 +37,9 @@ public class Ticket extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "INT")
     private int position;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "board_id", nullable = false, columnDefinition = "BIGINT")
+    private Board board;
 
 }
