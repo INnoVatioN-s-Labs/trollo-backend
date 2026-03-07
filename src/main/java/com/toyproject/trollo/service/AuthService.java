@@ -1,5 +1,7 @@
 package com.toyproject.trollo.service;
 
+import com.toyproject.trollo.common.code.ErrorCode;
+import com.toyproject.trollo.common.exception.BusinessException;
 import com.toyproject.trollo.dto.auth.AuthResponse;
 import com.toyproject.trollo.dto.auth.LoginRequest;
 import com.toyproject.trollo.dto.auth.SignupRequest;
@@ -26,7 +28,7 @@ public class AuthService {
     @Transactional
     public AuthResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new BusinessException(ErrorCode.USER_EMAIL_DUPLICATED);
         }
 
         User user = User.builder()
