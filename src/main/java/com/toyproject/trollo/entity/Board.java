@@ -38,4 +38,8 @@ public class Board extends BaseEntity {
     @JoinColumn(name = "workspace_id", nullable = false, columnDefinition = "BIGINT")
     private Workspace workspace;
 
+    public void updatePosition(int position) {
+        this.position = position;
+    }
+
 }
