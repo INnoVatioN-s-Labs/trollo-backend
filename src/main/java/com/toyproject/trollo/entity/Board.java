@@ -1,23 +1,29 @@
 package com.toyproject.trollo.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class Board {
+@Builder
+@Entity
+@Table(name = "boards")
+public class Board extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "BIGINT")
     private Long id;
+
+    @Column(nullable = false, length = 50, columnDefinition = "VARCHAR(50)")
     private String name;
+
+    @Column(nullable = false, columnDefinition = "INT")
     private int position;
 
 }
