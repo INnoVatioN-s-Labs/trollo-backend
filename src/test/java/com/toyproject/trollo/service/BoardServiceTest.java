@@ -9,6 +9,7 @@ import com.toyproject.trollo.entity.Board;
 import com.toyproject.trollo.entity.User;
 import com.toyproject.trollo.entity.Workspace;
 import com.toyproject.trollo.repository.BoardRepository;
+import com.toyproject.trollo.repository.TicketRepository;
 import com.toyproject.trollo.repository.UserRepository;
 import com.toyproject.trollo.repository.WorkspaceRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +37,9 @@ class BoardServiceTest {
 
     @Mock
     private WorkspaceRepository workspaceRepository;
+
+    @Mock
+    private TicketRepository ticketRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -171,6 +175,58 @@ class BoardServiceTest {
                 .isEqualTo(ErrorCode.BOARD_WORKSPACE_MISMATCH);
 
         verify(boardRepository, never()).save(any(Board.class));
+    }
+
+    @Test
+    @DisplayName("보드 삭제 성공 시 보드와 하위 티켓을 삭제하고 위치를 정리한다")
+    void deleteBoardSuccess() {
+        String ownerEmail = "owner@example.com";
+        User owner = createUser(1L, ownerEmail);
+        Workspace workspace = createWorkspace(10L, owner);
+        Board board = Board.builder()
+                .id(100L)
+                .name("Done")
+                .position(2)
+                .workspace(workspace)
+                .build();
+
+        given(userRepository.findByEmail(ownerEmail)).willReturn(Optional.of(owner));
+        given(workspaceRepository.findById(10L)).willReturn(Optional.of(workspace));
+        given(boardRepository.findById(100L)).willReturn(Optional.of(board));
+
+        boardService.deleteBoard(ownerEmail, 10L, 100L);
+
+        verify(ticketRepository).deleteByBoardId(100L);
+        verify(boardRepository).delete(board);
+        verify(boardRepository).flush();
+        verify(boardRepository).closeGap(10L, 2);
+    }
+
+    @Test
+    @DisplayName("보드 삭제 시 다른 워크스페이스 보드면 예외가 발생한다")
+    void deleteBoardFailsWhenWorkspaceMismatch() {
+        String ownerEmail = "owner@example.com";
+        User owner = createUser(1L, ownerEmail);
+        Workspace workspace = createWorkspace(10L, owner);
+        Workspace otherWorkspace = createWorkspace(99L, owner);
+        Board board = Board.builder()
+                .id(100L)
+                .name("Done")
+                .position(2)
+                .workspace(otherWorkspace)
+                .build();
+
+        given(userRepository.findByEmail(ownerEmail)).willReturn(Optional.of(owner));
+        given(workspaceRepository.findById(10L)).willReturn(Optional.of(workspace));
+        given(boardRepository.findById(100L)).willReturn(Optional.of(board));
+
+        assertThatThrownBy(() -> boardService.deleteBoard(ownerEmail, 10L, 100L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.BOARD_WORKSPACE_MISMATCH);
+
+        verify(ticketRepository, never()).deleteByBoardId(100L);
+        verify(boardRepository, never()).delete(any(Board.class));
     }
 
     private User createUser(Long id, String email) {

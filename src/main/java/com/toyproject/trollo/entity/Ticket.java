@@ -42,4 +42,18 @@ public class Ticket extends BaseEntity {
     @JoinColumn(name = "board_id", nullable = false, columnDefinition = "BIGINT")
     private Board board;
 
+    public void updateContent(String title, String description) {
+        this.title = title;
+        this.description = description;
+    }
+
+    public void updatePosition(int position) {
+        this.position = position;
+    }
+
+    public void moveTo(Board board, int position) {
+        this.board = board;
+        this.position = position;
+    }
+
 }

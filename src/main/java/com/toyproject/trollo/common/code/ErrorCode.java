@@ -13,6 +13,9 @@ public enum ErrorCode {
     BOARD_NOT_FOUND("-4001", "보드를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     BOARD_INVALID_POSITION("-4002", "유효하지 않은 보드 위치입니다.", HttpStatus.BAD_REQUEST),
     BOARD_WORKSPACE_MISMATCH("-4003", "보드가 해당 워크스페이스에 속하지 않습니다.", HttpStatus.BAD_REQUEST),
+    TICKET_NOT_FOUND("-5001", "티켓을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    TICKET_BOARD_MISMATCH("-5002", "티켓이 해당 보드에 속하지 않습니다.", HttpStatus.BAD_REQUEST),
+    TICKET_INVALID_POSITION("-5003", "유효하지 않은 티켓 위치입니다.", HttpStatus.BAD_REQUEST),
     AUTHENTICATION_FAILED("-8408", "이메일 또는 비밀번호가 올바르지 않습니다.", HttpStatus.UNAUTHORIZED),
     VALIDATION_FAILED("-8404", "요청값 검증에 실패했습니다.", HttpStatus.BAD_REQUEST),
     INTERNAL_SERVER_ERROR("-8500", "서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);

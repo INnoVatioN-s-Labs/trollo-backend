@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -71,5 +72,16 @@ public class BoardController {
     ) {
         BoardResponse response = boardService.reorderBoard(userDetails.getUsername(), workspaceId, boardId, request);
         return new ReturnMessage<>(response);
+    }
+
+    @DeleteMapping("/{boardId}")
+    @Operation(summary = "보드 삭제", description = "보드를 삭제하고 워크스페이스 내 보드 위치를 정리합니다.")
+    public ReturnMessage<Void> deleteBoard(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long workspaceId,
+            @PathVariable Long boardId
+    ) {
+        boardService.deleteBoard(userDetails.getUsername(), workspaceId, boardId);
+        return new ReturnMessage<>((Void) null);
     }
 }

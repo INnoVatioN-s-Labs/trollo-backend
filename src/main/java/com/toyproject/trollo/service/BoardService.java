@@ -9,6 +9,7 @@ import com.toyproject.trollo.entity.Board;
 import com.toyproject.trollo.entity.User;
 import com.toyproject.trollo.entity.Workspace;
 import com.toyproject.trollo.repository.BoardRepository;
+import com.toyproject.trollo.repository.TicketRepository;
 import com.toyproject.trollo.repository.UserRepository;
 import com.toyproject.trollo.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class BoardService {
 
     private final BoardRepository boardRepository;
+    private final TicketRepository ticketRepository;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
 
@@ -74,6 +76,24 @@ public class BoardService {
         Board reorderedBoard = boardRepository.save(board);
 
         return toResponse(reorderedBoard);
+    }
+
+    @Transactional
+    public void deleteBoard(String ownerEmail, Long workspaceId, Long boardId) {
+        User owner = getUserByEmail(ownerEmail);
+        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOARD_NOT_FOUND));
+        if (!board.getWorkspace().getId().equals(workspaceId)) {
+            throw new BusinessException(ErrorCode.BOARD_WORKSPACE_MISMATCH);
+        }
+
+        int currentPosition = board.getPosition();
+        ticketRepository.deleteByBoardId(boardId);
+        boardRepository.delete(board);
+        boardRepository.flush();
+        boardRepository.closeGap(workspaceId, currentPosition);
     }
 
     private User getUserByEmail(String ownerEmail) {
