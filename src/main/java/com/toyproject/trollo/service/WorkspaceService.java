@@ -48,6 +48,19 @@ public class WorkspaceService {
         return toResponse(workspace);
     }
 
+    @Transactional
+    public void deleteWorkspace(String ownerEmail, Long workspaceId) {
+        User owner = getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
+
+        if (!workspace.getOwner().getId().equals(owner.getId())) {
+            throw new BusinessException(ErrorCode.WORKSPACE_ACCESS_DENIED);
+        }
+
+        workspaceRepository.delete(workspace);
+    }
+
     @Transactional(readOnly = true)
     public List<WorkspaceResponse> getMyWorkspaces(String ownerEmail) {
         User owner = getUserByEmail(ownerEmail);

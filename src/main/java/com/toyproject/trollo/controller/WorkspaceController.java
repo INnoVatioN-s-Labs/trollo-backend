@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,5 +68,15 @@ public class WorkspaceController {
     ) {
         List<WorkspaceResponse> response = workspaceService.getMyWorkspaces(userDetails.getUsername());
         return new ReturnMessage<>(response);
+    }
+
+    @DeleteMapping("/{workspaceId}")
+    @Operation(summary = "워크스페이스 삭제", description = "소유하고 있는 워크스페이스를 삭제합니다.")
+    public ReturnMessage<Void> deleteWorkspace(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long workspaceId
+    ) {
+        workspaceService.deleteWorkspace(userDetails.getUsername(), workspaceId);
+        return new ReturnMessage<>(null);
     }
 }
