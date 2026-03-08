@@ -40,7 +40,7 @@ public class TicketService {
                 .position(nextPosition)
                 .board(board)
                 .build());
-        activityLogService.log(workspace, owner, ActivityType.TICKET_CREATE, "티켓을 생성했습니다: " + savedTicket.getTitle());
+        activityLogService.saveLog(workspace, owner, ActivityType.TICKET_CREATE, "티켓을 생성했습니다: " + savedTicket.getTitle());
         return toResponse(savedTicket);
     }
 
@@ -76,7 +76,7 @@ public class TicketService {
 
         ticket.updateContent(request.title(), request.description());
         Ticket updatedTicket = ticketRepository.save(ticket);
-        activityLogService.log(workspace, owner, ActivityType.TICKET_UPDATE, "티켓을 수정했습니다: " + updatedTicket.getTitle());
+        activityLogService.saveLog(workspace, owner, ActivityType.TICKET_UPDATE, "티켓을 수정했습니다: " + updatedTicket.getTitle());
         return toResponse(updatedTicket);
     }
 
@@ -134,7 +134,7 @@ public class TicketService {
         }
 
         Ticket movedTicket = ticketRepository.save(ticket);
-        activityLogService.log(workspace, owner, ActivityType.TICKET_MOVE, "티켓을 이동했습니다: " + movedTicket.getTitle());
+        activityLogService.saveLog(workspace, owner, ActivityType.TICKET_MOVE, "티켓을 이동했습니다: " + movedTicket.getTitle());
         return toResponse(movedTicket);
     }
 
@@ -153,7 +153,7 @@ public class TicketService {
         ticketRepository.delete(ticket);
         ticketRepository.flush();
         ticketRepository.closeGap(boardId, currentPosition);
-        activityLogService.log(workspace, owner, ActivityType.TICKET_DELETE, "티켓을 삭제했습니다: " + ticket.getTitle());
+        activityLogService.saveLog(workspace, owner, ActivityType.TICKET_DELETE, "티켓을 삭제했습니다: " + ticket.getTitle());
     }
 
     private Board getBoardWithWorkspaceCheck(Long boardId, Long workspaceId) {

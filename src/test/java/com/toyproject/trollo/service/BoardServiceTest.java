@@ -67,7 +67,7 @@ class BoardServiceTest {
 
         assertThat(response.id()).isEqualTo(100L);
         assertThat(response.position()).isEqualTo(3);
-        verify(activityLogService).log(any(Workspace.class), any(User.class), any(), any(String.class));
+        verify(activityLogService).saveLog(any(Workspace.class), any(User.class), any(), any(String.class));
     }
 
     @Test

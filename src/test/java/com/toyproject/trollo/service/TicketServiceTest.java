@@ -71,7 +71,7 @@ class TicketServiceTest {
 
         assertThat(response.id()).isEqualTo(1000L);
         assertThat(response.position()).isEqualTo(3);
-        verify(activityLogService).log(any(Workspace.class), any(User.class), any(), any(String.class));
+        verify(activityLogService).saveLog(any(Workspace.class), any(User.class), any(), any(String.class));
     }
 
     @Test

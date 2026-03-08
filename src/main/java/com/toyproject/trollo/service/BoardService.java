@@ -36,7 +36,7 @@ public class BoardService {
                 .position(nextPosition)
                 .workspace(workspace)
                 .build());
-        activityLogService.log(workspace, owner, ActivityType.BOARD_CREATE, "보드를 생성했습니다: " + savedBoard.getName());
+        activityLogService.saveLog(workspace, owner, ActivityType.BOARD_CREATE, "보드를 생성했습니다: " + savedBoard.getName());
         return toResponse(savedBoard);
     }
 
@@ -75,7 +75,7 @@ public class BoardService {
 
         board.updatePosition(targetPosition);
         Board reorderedBoard = boardRepository.save(board);
-        activityLogService.log(workspace, owner, ActivityType.BOARD_REORDER, "보드 순서를 변경했습니다: " + reorderedBoard.getName());
+        activityLogService.saveLog(workspace, owner, ActivityType.BOARD_REORDER, "보드 순서를 변경했습니다: " + reorderedBoard.getName());
 
         return toResponse(reorderedBoard);
     }
@@ -97,7 +97,7 @@ public class BoardService {
         boardRepository.delete(board);
         boardRepository.flush();
         boardRepository.closeGap(workspaceId, currentPosition);
-        activityLogService.log(workspace, owner, ActivityType.BOARD_DELETE, "보드를 삭제했습니다: " + board.getName());
+        activityLogService.saveLog(workspace, owner, ActivityType.BOARD_DELETE, "보드를 삭제했습니다: " + board.getName());
     }
 
     private BoardResponse toResponse(Board board) {

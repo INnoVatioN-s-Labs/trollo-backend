@@ -19,5 +19,7 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
 
     List<Membership> findAllByWorkspaceIdOrderByJoinedAtAsc(Long workspaceId);
 
+    long countByWorkspaceId(Long workspaceId);
+
     long countByWorkspaceIdAndRole(Long workspaceId, MembershipRole role);
 }
