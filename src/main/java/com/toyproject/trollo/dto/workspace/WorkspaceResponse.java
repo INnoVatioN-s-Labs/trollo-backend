@@ -10,9 +10,7 @@ public record WorkspaceResponse(
         String name,
         @Schema(description = "워크스페이스 설명", example = "백엔드 작업 공간")
         String description,
-        @Schema(description = "소유자 ID", example = "1")
-        Long ownerId,
-        @Schema(description = "소유자 이메일", example = "owner@example.com")
-        String ownerEmail
+        @Schema(description = "초대 코드", example = "AB12CD34")
+        String inviteCode
 ) {
 }
