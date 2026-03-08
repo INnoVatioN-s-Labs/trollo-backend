@@ -74,3 +74,52 @@ Trollo 프로젝트의 백엔드 시스템입니다. Spring Boot를 기반으로
 
 ## 📝 API 문서
 -   로컬 실행 시 `http://localhost:8080/swagger-ui/index.html`에서 API 문서를 확인할 수 있습니다.
+
+## 🤝 협업/권한 모델 규칙 (Phase 5+)
+
+-   **워크스페이스 소유 컬럼 제거**: `Workspace`는 더 이상 `owner(user_id)`를 가지지 않습니다.
+-   **초대 코드**: `Workspace.inviteCode`(8자리)를 기준으로 참여를 처리합니다.
+-   **권한 판단 기준**: 접근 제어는 반드시 `Membership`으로 판단합니다.
+    -   `HOST`: 멤버 강퇴, 호스트 양도 가능
+    -   `MEMBER`: 일반 보드/티켓 작업 가능
+-   **멤버 제한**: 워크스페이스 전체 멤버 수는 최대 10명입니다.
+
+## 📚 활동 이력(Activity Log) 규칙
+
+-   워크스페이스 내 주요 변경 이벤트는 `ActivityLog`에 기록해야 합니다.
+-   최소 기록 대상:
+    -   `MEMBER_JOIN`, `MEMBER_REMOVE`, `HOST_TRANSFER`
+    -   `BOARD_CREATE`, `BOARD_REORDER`, `BOARD_DELETE`
+    -   `TICKET_CREATE`, `TICKET_UPDATE`, `TICKET_MOVE`, `TICKET_DELETE`
+-   `content`는 프론트엔드 최근 활동에 바로 노출 가능한 한국어 문구로 작성합니다.
+
+## 🔌 협업 API 규칙
+
+-   **초대 코드 참여**: `POST /api/workspaces/join`
+    -   `inviteCode` 유효성, 중복 멤버 여부, 인원 제한(10명) 검증 필수
+-   **멤버 강퇴**: `DELETE /api/workspaces/{workspaceId}/members/{userId}`
+    -   요청자 `HOST` 검증 필수
+    -   자기 자신 강퇴 금지
+    -   대상이 `HOST`인 경우 강퇴 금지 (호스트 양도 우선)
+-   **호스트 양도**: `PATCH /api/workspaces/{workspaceId}/transfer-host`
+    -   요청자 `HOST` 검증 필수
+    -   기존 HOST를 MEMBER로, 대상 MEMBER를 HOST로 원자적(Transactional) 변경
+
+## ✅ 협업 기능 테스트 체크리스트
+
+-   참여 API:
+    -   정상 참여
+    -   잘못된 초대 코드
+    -   이미 멤버인 사용자
+    -   멤버 수 10명 초과
+-   강퇴 API:
+    -   HOST의 정상 강퇴
+    -   HOST가 아닌 요청자
+    -   존재하지 않는 대상 멤버
+    -   자기 자신 강퇴 시도
+    -   HOST 대상 강퇴 시도
+-   호스트 양도 API:
+    -   정상 양도
+    -   요청자가 HOST가 아닌 경우
+    -   대상 멤버 없음
+    -   대상이 이미 HOST인 경우
