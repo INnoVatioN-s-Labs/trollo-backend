@@ -5,13 +5,12 @@ import com.toyproject.trollo.common.exception.BusinessException;
 import com.toyproject.trollo.dto.board.BoardResponse;
 import com.toyproject.trollo.dto.board.CreateBoardRequest;
 import com.toyproject.trollo.dto.board.ReorderBoardRequest;
+import com.toyproject.trollo.entity.ActivityType;
 import com.toyproject.trollo.entity.Board;
 import com.toyproject.trollo.entity.User;
 import com.toyproject.trollo.entity.Workspace;
 import com.toyproject.trollo.repository.BoardRepository;
 import com.toyproject.trollo.repository.TicketRepository;
-import com.toyproject.trollo.repository.UserRepository;
-import com.toyproject.trollo.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +21,14 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final TicketRepository ticketRepository;
-    private final WorkspaceRepository workspaceRepository;
-    private final UserRepository userRepository;
+    private final WorkspaceAccessService workspaceAccessService;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public BoardResponse createBoard(String ownerEmail, Long workspaceId, CreateBoardRequest request) {
-        User owner = getUserByEmail(ownerEmail);
-        Workspace workspace = getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
         int nextPosition = boardRepository.findMaxPositionByWorkspaceId(workspaceId) + 1;
 
         Board savedBoard = boardRepository.save(Board.builder()
@@ -36,14 +36,15 @@ public class BoardService {
                 .position(nextPosition)
                 .workspace(workspace)
                 .build());
-
+        activityLogService.log(workspace, owner, ActivityType.BOARD_CREATE, "보드를 생성했습니다: " + savedBoard.getName());
         return toResponse(savedBoard);
     }
 
     @Transactional
     public BoardResponse reorderBoard(String ownerEmail, Long workspaceId, Long boardId, ReorderBoardRequest request) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOARD_NOT_FOUND));
@@ -74,14 +75,16 @@ public class BoardService {
 
         board.updatePosition(targetPosition);
         Board reorderedBoard = boardRepository.save(board);
+        activityLogService.log(workspace, owner, ActivityType.BOARD_REORDER, "보드 순서를 변경했습니다: " + reorderedBoard.getName());
 
         return toResponse(reorderedBoard);
     }
 
     @Transactional
     public void deleteBoard(String ownerEmail, Long workspaceId, Long boardId) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOARD_NOT_FOUND));
@@ -94,20 +97,7 @@ public class BoardService {
         boardRepository.delete(board);
         boardRepository.flush();
         boardRepository.closeGap(workspaceId, currentPosition);
-    }
-
-    private User getUserByEmail(String ownerEmail) {
-        return userRepository.findByEmail(ownerEmail)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private Workspace getWorkspaceWithAccessCheck(Long workspaceId, Long ownerId) {
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
-        if (!workspace.getOwner().getId().equals(ownerId)) {
-            throw new BusinessException(ErrorCode.WORKSPACE_ACCESS_DENIED);
-        }
-        return workspace;
+        activityLogService.log(workspace, owner, ActivityType.BOARD_DELETE, "보드를 삭제했습니다: " + board.getName());
     }
 
     private BoardResponse toResponse(Board board) {

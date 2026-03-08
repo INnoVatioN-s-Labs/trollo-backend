@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "workspaces",
     indexes = {
-        @Index(name = "idx_workspace_owner", columnList = "owner_id")
+        @Index(name = "idx_workspace_invite_code", columnList = "invite_code", unique = true)
     }
 )
 public class Workspace extends BaseEntity {
@@ -31,8 +31,11 @@ public class Workspace extends BaseEntity {
     @Column(length = 255, columnDefinition = "VARCHAR(255)")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_id", nullable = false, columnDefinition = "BIGINT")
-    private User owner;
+    @Column(name = "invite_code", nullable = false, unique = true, length = 8, columnDefinition = "VARCHAR(8)")
+    private String inviteCode;
+
+    public void updateInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
+    }
 
 }

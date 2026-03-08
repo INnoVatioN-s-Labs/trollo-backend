@@ -6,14 +6,13 @@ import com.toyproject.trollo.dto.ticket.CreateTicketRequest;
 import com.toyproject.trollo.dto.ticket.MoveTicketRequest;
 import com.toyproject.trollo.dto.ticket.TicketResponse;
 import com.toyproject.trollo.dto.ticket.UpdateTicketRequest;
+import com.toyproject.trollo.entity.ActivityType;
 import com.toyproject.trollo.entity.Board;
 import com.toyproject.trollo.entity.Ticket;
 import com.toyproject.trollo.entity.User;
 import com.toyproject.trollo.entity.Workspace;
 import com.toyproject.trollo.repository.BoardRepository;
 import com.toyproject.trollo.repository.TicketRepository;
-import com.toyproject.trollo.repository.UserRepository;
-import com.toyproject.trollo.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +23,14 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final BoardRepository boardRepository;
-    private final WorkspaceRepository workspaceRepository;
-    private final UserRepository userRepository;
+    private final WorkspaceAccessService workspaceAccessService;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public TicketResponse createTicket(String ownerEmail, Long workspaceId, Long boardId, CreateTicketRequest request) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
         Board board = getBoardWithWorkspaceCheck(boardId, workspaceId);
 
         int nextPosition = ticketRepository.findMaxPositionByBoardId(boardId) + 1;
@@ -40,14 +40,14 @@ public class TicketService {
                 .position(nextPosition)
                 .board(board)
                 .build());
-
+        activityLogService.log(workspace, owner, ActivityType.TICKET_CREATE, "티켓을 생성했습니다: " + savedTicket.getTitle());
         return toResponse(savedTicket);
     }
 
     @Transactional(readOnly = true)
     public TicketResponse getTicket(String ownerEmail, Long workspaceId, Long boardId, Long ticketId) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
         getBoardWithWorkspaceCheck(boardId, workspaceId);
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -65,8 +65,9 @@ public class TicketService {
             Long ticketId,
             UpdateTicketRequest request
     ) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
         getBoardWithWorkspaceCheck(boardId, workspaceId);
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -75,6 +76,7 @@ public class TicketService {
 
         ticket.updateContent(request.title(), request.description());
         Ticket updatedTicket = ticketRepository.save(ticket);
+        activityLogService.log(workspace, owner, ActivityType.TICKET_UPDATE, "티켓을 수정했습니다: " + updatedTicket.getTitle());
         return toResponse(updatedTicket);
     }
 
@@ -86,8 +88,9 @@ public class TicketService {
             Long ticketId,
             MoveTicketRequest request
     ) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
 
         Board sourceBoard = getBoardWithWorkspaceCheck(boardId, workspaceId);
         Board targetBoard = getBoardWithWorkspaceCheck(request.targetBoardId(), workspaceId);
@@ -131,13 +134,15 @@ public class TicketService {
         }
 
         Ticket movedTicket = ticketRepository.save(ticket);
+        activityLogService.log(workspace, owner, ActivityType.TICKET_MOVE, "티켓을 이동했습니다: " + movedTicket.getTitle());
         return toResponse(movedTicket);
     }
 
     @Transactional
     public void deleteTicket(String ownerEmail, Long workspaceId, Long boardId, Long ticketId) {
-        User owner = getUserByEmail(ownerEmail);
-        getWorkspaceWithAccessCheck(workspaceId, owner.getId());
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
         getBoardWithWorkspaceCheck(boardId, workspaceId);
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -148,20 +153,7 @@ public class TicketService {
         ticketRepository.delete(ticket);
         ticketRepository.flush();
         ticketRepository.closeGap(boardId, currentPosition);
-    }
-
-    private User getUserByEmail(String ownerEmail) {
-        return userRepository.findByEmail(ownerEmail)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private Workspace getWorkspaceWithAccessCheck(Long workspaceId, Long ownerId) {
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
-        if (!workspace.getOwner().getId().equals(ownerId)) {
-            throw new BusinessException(ErrorCode.WORKSPACE_ACCESS_DENIED);
-        }
-        return workspace;
+        activityLogService.log(workspace, owner, ActivityType.TICKET_DELETE, "티켓을 삭제했습니다: " + ticket.getTitle());
     }
 
     private Board getBoardWithWorkspaceCheck(Long boardId, Long workspaceId) {

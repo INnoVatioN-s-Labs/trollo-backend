@@ -11,8 +11,6 @@ import com.toyproject.trollo.entity.User;
 import com.toyproject.trollo.entity.Workspace;
 import com.toyproject.trollo.repository.BoardRepository;
 import com.toyproject.trollo.repository.TicketRepository;
-import com.toyproject.trollo.repository.UserRepository;
-import com.toyproject.trollo.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,21 +24,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KanbanService {
 
-    private final WorkspaceRepository workspaceRepository;
-    private final UserRepository userRepository;
     private final BoardRepository boardRepository;
     private final TicketRepository ticketRepository;
+    private final WorkspaceAccessService workspaceAccessService;
 
     @Transactional(readOnly = true)
     public KanbanWorkspaceResponse getKanban(String ownerEmail, Long workspaceId) {
-        User owner = userRepository.findByEmail(ownerEmail)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
-
-        if (!workspace.getOwner().getId().equals(owner.getId())) {
-            throw new BusinessException(ErrorCode.WORKSPACE_ACCESS_DENIED);
-        }
+        User owner = workspaceAccessService.getUserByEmail(ownerEmail);
+        Workspace workspace = workspaceAccessService.getWorkspace(workspaceId);
+        workspaceAccessService.getMembership(workspaceId, owner.getId());
 
         List<Board> boards = boardRepository.findAllByWorkspaceIdOrderByPositionAsc(workspaceId);
         Map<Long, KanbanBoardAccumulator> boardMap = new LinkedHashMap<>();

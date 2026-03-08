@@ -1,0 +1,17 @@
+package com.toyproject.trollo.entity;
+
+public enum ActivityType {
+    WORKSPACE_CREATE,
+    WORKSPACE_DELETE,
+    WORKSPACE_INVITE_CODE_REGENERATE,
+    MEMBER_JOIN,
+    MEMBER_REMOVE,
+    HOST_TRANSFER,
+    BOARD_CREATE,
+    BOARD_REORDER,
+    BOARD_DELETE,
+    TICKET_CREATE,
+    TICKET_UPDATE,
+    TICKET_MOVE,
+    TICKET_DELETE
+}
