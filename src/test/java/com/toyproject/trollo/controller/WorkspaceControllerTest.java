@@ -123,7 +123,9 @@ class WorkspaceControllerTest {
                 "티켓을 이동했습니다: API 구현",
                 2L,
                 "개발자",
-                LocalDateTime.of(2026, 3, 8, 16, 50, 0)
+                LocalDateTime.of(2026, 3, 8, 16, 50, 0),
+                10L,
+                "백엔드 팀"
         );
         given(activityLogService.getRecentActivities(email, 10L)).willReturn(List.of(activity));
 

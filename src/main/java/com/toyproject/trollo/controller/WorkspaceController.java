@@ -88,6 +88,15 @@ public class WorkspaceController {
         return new ReturnMessage<>(response);
     }
 
+    @GetMapping("/activities")
+    @Operation(summary = "전체 최근 활동 통합 조회", description = "사용자가 속한 모든 워크스페이스의 최근 활동을 통합하여 최신순으로 10건 조회합니다.")
+    public ReturnMessage<List<ActivityLogResponse>> getMyRecentActivities(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        List<ActivityLogResponse> response = activityLogService.getMyRecentActivities(userDetails.getUsername());
+        return new ReturnMessage<>(response);
+    }
+
     @PostMapping("/join")
     @Operation(summary = "초대 코드로 워크스페이스 참여", description = "유효한 초대 코드를 통해 워크스페이스에 멤버로 참여합니다.")
     public ReturnMessage<JoinWorkspaceResponse> joinWorkspace(
