@@ -1,8 +1,10 @@
-name: Trollo Backend CI/CD (Main)
+name: Trollo Backend CI/CD (Dev)
 
 on:
     push:
-        branches: ['main']
+        branches: ['dev']
+    pull_request:
+        branches: ['dev']
 
 env:
     DOCKER_IMAGE_NAME: trollo-backend
@@ -31,9 +33,10 @@ jobs:
                   ./gradlew build -x test
 
     cd:
-        name: Deploy to Production (CD)
+        name: Deploy to Same Target (CD)
         runs-on: ubuntu-latest
         needs: ci
+        if: github.event_name == 'push'
         permissions:
             contents: read
             packages: write
