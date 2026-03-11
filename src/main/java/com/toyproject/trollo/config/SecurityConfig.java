@@ -1,7 +1,6 @@
 package com.toyproject.trollo.config;
 
 import com.toyproject.trollo.security.JwtAuthenticationFilter;
-import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,9 +36,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll();
 
-                    // H2 콘솔은 로컬 환경에서만 허용 (운영 환경 에러 방지)
-                    if (java.util.Arrays.asList(env.getActiveProfiles()).contains("local")) {
-                        auth.requestMatchers(PathRequest.toH2Console()).permitAll();
+                    // H2 콘솔은 실제 활성화된 경우에만 허용한다.
+                    if (env.getProperty("spring.h2.console.enabled", Boolean.class, false)) {
+                        String h2ConsolePath = env.getProperty("spring.h2.console.path", "/h2-console");
+                        auth.requestMatchers(h2ConsolePath + "/**").permitAll();
                     }
 
                     auth.anyRequest().authenticated();

@@ -49,7 +49,7 @@ public class WorkspaceService {
                 .role(MembershipRole.HOST)
                 .build());
         activityLogService.saveLog(savedWorkspace, owner, ActivityType.WORKSPACE_CREATE, "워크스페이스를 생성했습니다.");
-        return toResponse(savedWorkspace);
+        return toResponse(savedWorkspace, 1L);
     }
 
     @Transactional(readOnly = true)
@@ -173,11 +173,17 @@ public class WorkspaceService {
     }
 
     private WorkspaceResponse toResponse(Workspace workspace) {
+        long memberCount = membershipRepository.countByWorkspaceId(workspace.getId());
+        return toResponse(workspace, memberCount);
+    }
+
+    private WorkspaceResponse toResponse(Workspace workspace, long memberCount) {
         return new WorkspaceResponse(
                 workspace.getId(),
                 workspace.getName(),
                 workspace.getDescription(),
-                workspace.getInviteCode()
+                workspace.getInviteCode(),
+                memberCount
         );
     }
 
