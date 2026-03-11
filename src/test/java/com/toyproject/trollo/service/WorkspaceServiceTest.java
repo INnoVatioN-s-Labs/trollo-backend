@@ -82,6 +82,7 @@ class WorkspaceServiceTest {
 
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.inviteCode()).hasSize(8);
+        assertThat(response.memberCount()).isEqualTo(1L);
         assertThat(membershipCaptor.getValue().getRole()).isEqualTo(MembershipRole.HOST);
         assertThat(membershipCaptor.getValue().getUser()).isEqualTo(owner);
     }
@@ -113,6 +114,7 @@ class WorkspaceServiceTest {
         );
 
         assertThat(response.inviteCode()).hasSize(8);
+        assertThat(response.memberCount()).isEqualTo(1L);
         verify(workspaceRepository).save(any(Workspace.class));
     }
 
@@ -146,12 +148,16 @@ class WorkspaceServiceTest {
                 Membership.builder().workspace(first).user(user).role(MembershipRole.HOST).build(),
                 Membership.builder().workspace(second).user(user).role(MembershipRole.MEMBER).build()
         ));
+        given(membershipRepository.countByWorkspaceId(20L)).willReturn(4L);
+        given(membershipRepository.countByWorkspaceId(10L)).willReturn(2L);
 
         List<WorkspaceResponse> response = workspaceService.getMyWorkspaces(userEmail);
 
         assertThat(response).hasSize(2);
         assertThat(response.get(0).id()).isEqualTo(20L);
+        assertThat(response.get(0).memberCount()).isEqualTo(4L);
         assertThat(response.get(1).id()).isEqualTo(10L);
+        assertThat(response.get(1).memberCount()).isEqualTo(2L);
     }
 
     @Test

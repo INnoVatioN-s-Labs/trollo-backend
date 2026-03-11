@@ -11,6 +11,8 @@ public record WorkspaceResponse(
         @Schema(description = "워크스페이스 설명", example = "백엔드 작업 공간")
         String description,
         @Schema(description = "초대 코드", example = "AB12CD34")
-        String inviteCode
+        String inviteCode,
+        @Schema(description = "참여 멤버 수", example = "3")
+        Long memberCount
 ) {
 }
