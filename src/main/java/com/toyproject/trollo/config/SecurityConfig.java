@@ -1,5 +1,7 @@
 package com.toyproject.trollo.config;
 
+import com.toyproject.trollo.security.CustomAccessDeniedHandler;
+import com.toyproject.trollo.security.CustomAuthenticationEntryPoint;
 import com.toyproject.trollo.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,10 +17,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final org.springframework.core.env.Environment env;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, org.springframework.core.env.Environment env) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            CustomAccessDeniedHandler accessDeniedHandler,
+            CustomAuthenticationEntryPoint authenticationEntryPoint,
+            org.springframework.core.env.Environment env
+    ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.accessDeniedHandler = accessDeniedHandler;
+        this.authenticationEntryPoint = authenticationEntryPoint;
         this.env = env;
     }
 
@@ -44,6 +55,10 @@ public class SecurityConfig {
 
                     auth.anyRequest().authenticated();
                 })
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

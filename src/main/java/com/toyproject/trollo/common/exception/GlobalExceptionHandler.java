@@ -3,6 +3,7 @@ package com.toyproject.trollo.common.exception;
 import com.toyproject.trollo.common.code.ErrorCode;
 import com.toyproject.trollo.common.util.ReturnMessage;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +16,12 @@ public class GlobalExceptionHandler {
     public ReturnMessage<Void> handleBusinessException(BusinessException e) {
         ErrorCode errorCode = e.getErrorCode();
         return new ReturnMessage<>(errorCode, e.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ReturnMessage<Void> handleAccessDeniedException(AccessDeniedException e) {
+        ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
+        return new ReturnMessage<>(errorCode);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
