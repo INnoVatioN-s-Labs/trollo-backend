@@ -6,6 +6,10 @@ import com.toyproject.trollo.dto.ticket.MoveTicketRequest;
 import com.toyproject.trollo.dto.ticket.TicketResponse;
 import com.toyproject.trollo.dto.ticket.UpdateTicketRequest;
 import com.toyproject.trollo.service.TicketService;
+import com.toyproject.trollo.service.CommentService;
+import com.toyproject.trollo.dto.ticket.TicketFeedResponse;
+import com.toyproject.trollo.dto.ticket.CreateCommentRequest;
+import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final CommentService commentService;
 
     @PostMapping
     @Operation(summary = "티켓 생성", description = "보드의 마지막 위치 + 1로 티켓을 생성합니다.")
@@ -127,6 +132,46 @@ public class TicketController {
             @PathVariable Long ticketId
     ) {
         ticketService.deleteTicket(userDetails.getUsername(), workspaceId, boardId, ticketId);
+        return new ReturnMessage<>((Void) null);
+    }
+
+    @GetMapping("/{ticketId}/feeds")
+    @Operation(summary = "티켓 피드 조회", description = "티켓의 댓글과 활동 내역을 시간순으로 조회합니다.")
+    public ReturnMessage<List<TicketFeedResponse>> getTicketFeeds(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long workspaceId,
+            @PathVariable Long boardId,
+            @PathVariable Long ticketId
+    ) {
+        List<TicketFeedResponse> response = ticketService.getTicketFeeds(
+                userDetails.getUsername(), workspaceId, boardId, ticketId
+        );
+        return new ReturnMessage<>(response);
+    }
+
+    @PostMapping("/{ticketId}/comments")
+    @Operation(summary = "댓글 작성", description = "티켓에 새로운 댓글을 작성합니다.")
+    public ReturnMessage<Void> createComment(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long workspaceId,
+            @PathVariable Long boardId,
+            @PathVariable Long ticketId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "댓글 생성 요청",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "댓글 작성 예시",
+                                    value = "{\"content\":\"이 부분 수정 완료했습니다.\",\"parentId\":null}"
+                            )
+                    )
+            )
+            @Valid @RequestBody CreateCommentRequest request
+    ) {
+        commentService.createComment(
+                userDetails.getUsername(), workspaceId, boardId, ticketId, request
+        );
         return new ReturnMessage<>((Void) null);
     }
 }

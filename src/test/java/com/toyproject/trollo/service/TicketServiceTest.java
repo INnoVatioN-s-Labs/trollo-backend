@@ -11,6 +11,14 @@ import com.toyproject.trollo.entity.User;
 import com.toyproject.trollo.entity.Workspace;
 import com.toyproject.trollo.repository.BoardRepository;
 import com.toyproject.trollo.repository.TicketRepository;
+import com.toyproject.trollo.repository.CommentRepository;
+import com.toyproject.trollo.repository.ActivityLogRepository;
+import com.toyproject.trollo.entity.Comment;
+import com.toyproject.trollo.entity.ActivityLog;
+import com.toyproject.trollo.entity.ActivityType;
+import com.toyproject.trollo.dto.ticket.TicketFeedResponse;
+import com.toyproject.trollo.dto.ticket.FeedType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +26,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +50,12 @@ class TicketServiceTest {
 
     @Mock
     private ActivityLogService activityLogService;
+
+    @Mock
+    private CommentRepository commentRepository;
+
+    @Mock
+    private ActivityLogRepository activityLogRepository;
 
     @InjectMocks
     private TicketService ticketService;
@@ -71,7 +87,7 @@ class TicketServiceTest {
 
         assertThat(response.id()).isEqualTo(1000L);
         assertThat(response.position()).isEqualTo(3);
-        verify(activityLogService).saveLog(any(Workspace.class), any(User.class), any(), any(String.class));
+        verify(activityLogService).saveLog(any(Workspace.class), any(User.class), any(Ticket.class), any(), any(String.class));
     }
 
     @Test
@@ -109,6 +125,42 @@ class TicketServiceTest {
 
     private Workspace createWorkspace(Long id) {
         return Workspace.builder().id(id).name("백엔드").description("설명").inviteCode("AB12CD34").build();
+    }
+
+    @Test
+    @DisplayName("티켓 통합 피드(댓글+활동기록) 조회 성공 시 시간순으로 정렬된다")
+    void getTicketFeedsSuccess() {
+        String email = "user@example.com";
+        User user = createUser(1L, email);
+        User user2 = createUser(2L, "other@example.com");
+        Workspace workspace = createWorkspace(10L);
+        Board board = createBoard(100L, workspace, 1);
+        Ticket ticket = Ticket.builder().id(1000L).title("제목").description("설명").position(1).board(board).build();
+
+        Comment comment = Comment.builder()
+                .id(1L).ticket(ticket).user(user2).content("댓글")
+                .build();
+        // BaseEntity fields aren't easily mutable without reflection in pure tests, so we may not be able to rely on createdAt easily, 
+        // but since we are mocking the repository return values, the service will just sort them.
+
+        ActivityLog log = ActivityLog.builder()
+                .id(100L).workspace(workspace).user(user).ticket(ticket).type(ActivityType.TICKET_UPDATE).content("수정")
+                .build();
+
+        given(workspaceAccessService.getUserByEmail(email)).willReturn(user);
+        given(boardRepository.findById(100L)).willReturn(Optional.of(board));
+        given(ticketRepository.findById(1000L)).willReturn(Optional.of(ticket));
+        given(commentRepository.findByTicketIdOrderByCreatedAtDesc(1000L)).willReturn(List.of(comment));
+        given(activityLogRepository.findByTicketIdOrderByCreatedAtDesc(1000L)).willReturn(List.of(log));
+
+        // reflection is better:
+        ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now().minusMinutes(10));
+        ReflectionTestUtils.setField(log, "createdAt", LocalDateTime.now());
+
+        List<TicketFeedResponse> feeds = ticketService.getTicketFeeds(email, 10L, 100L, 1000L);
+        assertThat(feeds).hasSize(2);
+        assertThat(feeds.get(0).type()).isEqualTo(FeedType.ACTIVITY);
+        assertThat(feeds.get(1).type()).isEqualTo(FeedType.COMMENT);
     }
 
     private Board createBoard(Long id, Workspace workspace, int position) {

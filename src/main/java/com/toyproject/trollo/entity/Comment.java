@@ -7,19 +7,21 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Entity
 @Table(
-    name = "activity_logs",
+    name = "comments",
     indexes = {
-        @Index(name = "idx_activity_workspace_created_at", columnList = "workspace_id, created_at"),
-        @Index(name = "idx_activity_user", columnList = "user_id")
+        @Index(name = "idx_comment_ticket", columnList = "ticket_id, created_at")
     }
 )
-public class ActivityLog extends BaseEntity {
+public class Comment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,21 +29,22 @@ public class ActivityLog extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "workspace_id", nullable = false, columnDefinition = "BIGINT")
-    private Workspace workspace;
+    @JoinColumn(name = "ticket_id", nullable = false, columnDefinition = "BIGINT")
+    private Ticket ticket;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, columnDefinition = "BIGINT")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id", columnDefinition = "BIGINT")
-    private Ticket ticket;
-
-    @Column(nullable = false, length = 255, columnDefinition = "VARCHAR(255)")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40, columnDefinition = "VARCHAR(40)")
-    private ActivityType type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id", columnDefinition = "BIGINT")
+    private Comment parent;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> children = new ArrayList<>();
+
 }

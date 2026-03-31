@@ -23,9 +23,15 @@ public class ActivityLogService {
 
     @Transactional
     public void saveLog(Workspace workspace, User user, ActivityType type, String content) {
+        saveLog(workspace, user, null, type, content);
+    }
+
+    @Transactional
+    public void saveLog(Workspace workspace, User user, com.toyproject.trollo.entity.Ticket ticket, ActivityType type, String content) {
         activityLogRepository.save(ActivityLog.builder()
                 .workspace(workspace)
                 .user(user)
+                .ticket(ticket)
                 .type(type)
                 .content(content)
                 .build());
